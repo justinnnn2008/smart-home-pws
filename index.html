@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Smart Home Energiebesparing — PWS Justin Mengerink</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --ink:#050c1a;
+  --ink2:#0a1628;
+  --card:#0d1f3c;
+  --card2:#112544;
+  --rim:#1a3560;
+  --rim2:#1f3f70;
+  --lime:#b8ff3c;
+  --cyan:#00e5ff;
+  --violet:#7c5cfc;
+  --amber:#ffb347;
+  --rose:#ff4d6d;
+  --txt:#c8deff;
+  --sub:#5a7fad;
+  --sub2:#7a9ece;
+  --ff:'Outfit',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--txt);font-family:var(--ff);overflow-x:hidden;min-height:100vh}
+
+/* ── BACKGROUND ── */
+.bg-fx{position:fixed;inset:0;pointer-events:none;z-index:0}
+.bg-fx::before{content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at -10% -10%,rgba(184,255,60,.055) 0%,transparent 55%),
+    radial-gradient(ellipse 60% 50% at 110% 110%,rgba(124,92,252,.07) 0%,transparent 55%),
+    radial-gradient(ellipse 40% 30% at 50% 50%,rgba(0,229,255,.03) 0%,transparent 50%)}
+.bg-grid{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(26,53,96,.22) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(26,53,96,.22) 1px,transparent 1px);
+  background-size:56px 56px}
+.noise{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.025;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* ── NAV ── */
+nav{position:relative;z-index:30;display:flex;justify-content:space-between;align-items:center;
+  padding:18px 48px;border-bottom:1px solid var(--rim);backdrop-filter:blur(20px);
+  background:rgba(5,12,26,.6)}
+.nav-l{display:flex;align-items:center;gap:14px}
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--lime);
+  box-shadow:0 0 12px var(--lime);animation:glow 2.5s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 12px var(--lime);opacity:1}50%{box-shadow:0 0 4px var(--lime);opacity:.4}}
+.nav-tag{font-family:var(--mono);font-size:11px;color:var(--sub);letter-spacing:.1em;text-transform:uppercase}
+.nav-r{font-family:var(--mono);font-size:11px;color:var(--sub);letter-spacing:.06em}
+
+/* ── HERO ── */
+.hero{position:relative;z-index:10;padding:90px 48px 50px;max-width:1000px;margin:0 auto;text-align:center}
+.hero-chip{display:inline-flex;align-items:center;gap:8px;
+  background:rgba(184,255,60,.07);border:1px solid rgba(184,255,60,.25);
+  color:var(--lime);font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+  padding:6px 18px;border-radius:100px;margin-bottom:32px}
+.hero h1{font-size:clamp(2.8rem,7vw,5.5rem);font-weight:900;line-height:1.02;
+  letter-spacing:-.05em;margin-bottom:22px}
+.hero h1 .gr{background:linear-gradient(110deg,var(--lime) 0%,var(--cyan) 60%,var(--violet) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-p{font-size:1.05rem;color:var(--sub2);line-height:1.7;max-width:560px;margin:0 auto 10px;font-weight:400}
+.hero-src{font-family:var(--mono);font-size:.72rem;color:var(--sub);opacity:.7}
+
+/* ── STAT STRIP ── */
+.strip{position:relative;z-index:10;display:grid;grid-template-columns:repeat(4,1fr);
+  gap:1px;background:var(--rim);border-block:1px solid var(--rim);margin-bottom:64px}
+@media(max-width:640px){.strip{grid-template-columns:repeat(2,1fr)}}
+.strip-cell{background:var(--ink2);padding:26px 20px;text-align:center;transition:background .2s}
+.strip-cell:hover{background:var(--card)}
+.strip-val{font-size:1.8rem;font-weight:800;letter-spacing:-.03em;line-height:1;margin-bottom:6px}
+.strip-lbl{font-family:var(--mono);font-size:.68rem;color:var(--sub);line-height:1.4;text-transform:uppercase;letter-spacing:.08em}
+.c-lime{color:var(--lime)} .c-cyan{color:var(--cyan)} .c-amber{color:var(--amber)} .c-violet{color:var(--violet)} .c-rose{color:var(--rose)}
+
+/* ── MAIN ── */
+main{position:relative;z-index:10;max-width:1280px;margin:0 auto;padding:0 32px 100px}
+
+/* ── SECTION HEADER ── */
+.sh{display:flex;align-items:center;gap:14px;margin-bottom:24px}
+.sh-num{font-family:var(--mono);font-size:.7rem;color:var(--lime);background:rgba(184,255,60,.1);
+  border:1px solid rgba(184,255,60,.25);border-radius:6px;padding:3px 8px}
+.sh-txt{font-size:.72rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em;color:var(--sub2)}
+.sh::after{content:'';flex:1;height:1px;background:var(--rim)}
+
+/* ── LAYOUT ── */
+.main-grid{display:grid;grid-template-columns:1fr 400px;gap:28px;margin-bottom:56px}
+@media(max-width:960px){.main-grid{grid-template-columns:1fr}}
+
+/* ── PANEL ── */
+.panel{background:var(--card);border:1px solid var(--rim);border-radius:24px;padding:36px;position:relative;overflow:hidden}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(184,255,60,.4),transparent)}
+.panel-h{font-size:.75rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em;
+  color:var(--lime);margin-bottom:24px;display:flex;align-items:center;gap:10px}
+.panel-h::after{content:'';flex:1;height:1px;background:var(--rim)}
+
+/* ── FIELDS ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fld{margin-bottom:16px}
+.fld label{display:block;font-size:.78rem;color:var(--sub2);margin-bottom:7px;font-weight:500}
+.fld label .src{font-family:var(--mono);font-size:.65rem;color:var(--sub);margin-left:5px;opacity:.8}
+.iw{position:relative}
+input[type=number],select{width:100%;background:var(--card2);border:1px solid var(--rim2);
+  border-radius:10px;padding:10px 14px;color:var(--txt);font-family:var(--ff);font-size:.92rem;
+  transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+input[type=number]:focus,select:focus{outline:none;border-color:var(--lime);box-shadow:0 0 0 3px rgba(184,255,60,.12)}
+.unt{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  font-family:var(--mono);font-size:.72rem;color:var(--sub);pointer-events:none}
+select option{background:var(--card2)}
+
+/* ── DEVICE CARDS ── */
+.devices-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:0}
+.dev-card{background:var(--card2);border:1px solid var(--rim);border-radius:14px;
+  padding:14px 16px;cursor:pointer;transition:all .18s;user-select:none;position:relative;overflow:hidden}
+.dev-card::after{content:'';position:absolute;inset:0;border-radius:14px;
+  background:linear-gradient(135deg,rgba(184,255,60,.07),transparent);opacity:0;transition:opacity .2s}
+.dev-card:hover{border-color:var(--rim2);transform:translateY(-1px)}
+.dev-card:hover::after{opacity:1}
+.dev-card.on{background:rgba(184,255,60,.07);border-color:rgba(184,255,60,.45)}
+.dev-card.on::after{opacity:1}
+.dev-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.dev-ico{font-size:1.4rem}
+.dev-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--rim2);
+  display:flex;align-items:center;justify-content:center;font-size:.7rem;
+  transition:all .15s;flex-shrink:0}
+.dev-card.on .dev-check{background:var(--lime);border-color:var(--lime);color:var(--ink)}
+.dev-name{font-size:.82rem;font-weight:600;margin-bottom:3px;line-height:1.3}
+.dev-save{font-size:.7rem;color:var(--lime);font-family:var(--mono)}
+.dev-cost{font-size:.68rem;color:var(--sub);font-family:var(--mono);margin-top:2px}
+
+/* ── SLIDER ── */
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;
+  background:var(--card2);border-radius:10px;border:1px solid var(--rim2);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;
+  border-radius:50%;background:var(--lime);cursor:pointer;
+  border:3px solid var(--ink);box-shadow:0 0 8px rgba(184,255,60,.5)}
+.range-row{display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:.68rem;color:var(--sub);margin-top:6px}
+
+/* ── RESULTS PANEL ── */
+.res-panel{position:sticky;top:24px;height:fit-content}
+.big-num-wrap{text-align:center;padding:32px 0 28px;border-bottom:1px solid var(--rim);margin-bottom:22px;position:relative}
+.big-lbl{font-family:var(--mono);font-size:.65rem;text-transform:uppercase;letter-spacing:.14em;
+  color:var(--sub);margin-bottom:10px}
+.big-num{font-size:3.8rem;font-weight:900;letter-spacing:-.05em;line-height:1;
+  color:var(--lime);transition:all .3s}
+.big-sub{font-family:var(--mono);font-size:.75rem;color:var(--sub);margin-top:6px}
+.big-pct{position:absolute;top:28px;right:20px;
+  font-family:var(--mono);font-size:.9rem;font-weight:700;
+  background:rgba(184,255,60,.1);border:1px solid rgba(184,255,60,.3);
+  color:var(--lime);padding:4px 10px;border-radius:8px}
+
+/* ── RESULT ROWS ── */
+.r-row{display:flex;justify-content:space-between;align-items:center;
+  padding:9px 0;border-bottom:1px solid rgba(26,53,96,.5);font-size:.84rem}
+.r-row:last-child{border:none}
+.r-l{color:var(--sub2)}
+.r-v{font-family:var(--mono);font-weight:500}
+
+/* ── BARS ── */
+.bar-section{margin-top:18px}
+.bar-lbl-row{font-family:var(--mono);font-size:.62rem;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--sub);margin-bottom:12px}
+.bar-item{margin-bottom:11px}
+.bar-meta{display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:4px}
+.bar-name{color:var(--sub2)}
+.bar-pct{font-family:var(--mono);color:var(--lime);font-size:.7rem}
+.bar-track{height:4px;background:var(--card2);border-radius:10px;overflow:hidden}
+.bar-fill{height:100%;border-radius:10px;
+  background:linear-gradient(90deg,var(--lime),var(--cyan));
+  transition:width .7s cubic-bezier(.4,0,.2,1)}
+
+/* ── INSIGHT ── */
+.insight-box{margin-top:18px;background:rgba(184,255,60,.04);
+  border:1px solid rgba(184,255,60,.18);border-radius:12px;
+  padding:14px 16px;font-size:.8rem;line-height:1.65;color:var(--sub2)}
+.insight-box strong{color:var(--lime)}
+
+/* ── PAYBACK SECTION ── */
+.payback-section{margin-bottom:56px}
+.payback-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:640px){.payback-grid{grid-template-columns:1fr}}
+.pb-card{background:var(--card);border:1px solid var(--rim);border-radius:20px;
+  padding:28px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s}
+.pb-card:hover{transform:translateY(-3px);border-color:var(--rim2)}
+.pb-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:20px 20px 0 0}
+.pb-card.lime::before{background:linear-gradient(90deg,var(--lime),var(--cyan))}
+.pb-card.cyan::before{background:linear-gradient(90deg,var(--cyan),var(--violet))}
+.pb-card.amb::before{background:linear-gradient(90deg,var(--amber),var(--rose))}
+.pb-head{font-family:var(--mono);font-size:.65rem;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--sub);margin-bottom:14px}
+.pb-val{font-size:2.4rem;font-weight:800;letter-spacing:-.04em;line-height:1;margin-bottom:6px}
+.pb-desc{font-size:.78rem;color:var(--sub);font-family:var(--mono);line-height:1.4}
+
+/* ── HARDWARE LIST ── */
+.hw-list{margin-top:20px}
+.hw-item{display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px solid rgba(26,53,96,.5);font-size:.82rem}
+.hw-item:last-child{border:none;font-weight:700;padding-top:14px}
+.hw-name{color:var(--sub2)}
+.hw-price{font-family:var(--mono);color:var(--amber)}
+.hw-total-label{color:var(--txt)}
+.hw-total-val{color:var(--lime);font-family:var(--mono)}
+
+/* ── TIMELINE ── */
+.tl-section{margin-bottom:56px}
+.tl-wrap{background:var(--card);border:1px solid var(--rim);border-radius:24px;padding:36px;
+  position:relative;overflow:hidden}
+.tl-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,229,255,.3),transparent)}
+.tl-row{display:grid;grid-template-columns:90px 1fr;gap:16px;align-items:start;margin-bottom:16px}
+.tl-row:last-child{margin-bottom:0}
+.tl-yr{font-family:var(--mono);font-size:.72rem;color:var(--sub);padding-top:6px}
+.tl-bar-bg{height:32px;background:var(--card2);border-radius:10px;
+  overflow:hidden;border:1px solid var(--rim)}
+.tl-bar-in{height:100%;border-radius:9px;display:flex;align-items:center;
+  padding-left:14px;font-size:.78rem;font-weight:700;font-family:var(--mono);
+  transition:width .9s cubic-bezier(.4,0,.2,1);white-space:nowrap;min-width:80px}
+.tl-bar-in.neg{background:linear-gradient(90deg,rgba(255,77,109,.3),rgba(255,77,109,.08));
+  color:var(--rose);border:1px solid rgba(255,77,109,.3)}
+.tl-bar-in.pos{background:linear-gradient(90deg,rgba(184,255,60,.22),rgba(0,229,255,.12));
+  color:var(--lime);border:1px solid rgba(184,255,60,.3)}
+.tl-note{font-size:.68rem;color:var(--sub);font-family:var(--mono);margin-top:4px}
+
+/* ── INFO GRID ── */
+.info-section{margin-bottom:56px}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.i-card{background:var(--card);border:1px solid var(--rim);border-radius:16px;
+  padding:22px;transition:border-color .2s,transform .2s;cursor:default}
+.i-card:hover{border-color:var(--rim2);transform:translateY(-2px)}
+.i-ico{font-size:1.6rem;margin-bottom:12px}
+.i-card h4{font-size:.88rem;font-weight:600;margin-bottom:7px}
+.i-card p{font-size:.76rem;color:var(--sub2);line-height:1.6}
+.i-ref{font-family:var(--mono);font-size:.65rem;color:var(--sub);margin-top:8px;opacity:.8}
+
+/* ── COMPARE TABLE ── */
+.tbl-section{margin-bottom:56px}
+.tbl-wrap{background:var(--card);border:1px solid var(--rim);border-radius:20px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:.84rem}
+thead tr{background:var(--card2);border-bottom:1px solid var(--rim2)}
+thead th{padding:14px 20px;text-align:left;font-weight:600;
+  color:var(--sub2);font-size:.7rem;letter-spacing:.06em;text-transform:uppercase}
+tbody tr{border-bottom:1px solid rgba(26,53,96,.4);transition:background .15s}
+tbody tr:hover{background:rgba(13,31,60,.5)}
+tbody td{padding:13px 20px;vertical-align:middle}
+tbody td:first-child{font-weight:500;color:var(--txt)}
+.badge{display:inline-block;padding:3px 9px;border-radius:100px;
+  font-family:var(--mono);font-size:.65rem}
+.badge-c{background:rgba(255,179,71,.12);color:var(--amber);border:1px solid rgba(255,179,71,.3)}
+.badge-a{background:rgba(184,255,60,.1);color:var(--lime);border:1px solid rgba(184,255,60,.3)}
+
+/* ── FOOTER ── */
+footer{position:relative;z-index:10;border-top:1px solid var(--rim);
+  padding:28px 48px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+footer p{font-family:var(--mono);font-size:.68rem;color:var(--sub)}
+
+/* ── ANIMS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.fu{opacity:0;animation:fadeUp .55s ease forwards}
+.d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.25s}.d4{animation-delay:.35s}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--ink)}
+::-webkit-scrollbar-thumb{background:var(--rim2);border-radius:10px}
+</style>
+</head>
+<body>
+<div class="bg-fx"></div>
+<div class="bg-grid"></div>
+<div class="noise"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-l">
+    <span class="pulse-dot"></span>
+    <span class="nav-tag">PWS · H5A · Marienburg Leeuwarden</span>
+  </div>
+  <div class="nav-r">Justin Mengerink · 2025–2026</div>
+</nav>
+
+<!-- HERO -->
+<div class="hero fu d1">
+  <div class="hero-chip">🏠 Profielwerkstuk — Energiebesparing</div>
+  <h1>Hoeveel bespaart<br/><span class="gr">jouw smart home?</span></h1>
+  <p class="hero-p">Gebaseerd op mijn eigen PWS-simulatie: 4 personen, energielabel C, prijzen van Milieu Centraal. Stel je eigen situatie in en zie exact hoeveel je bespaart — én hoe snel je investering terugverdiend is.</p>
+  <p class="hero-src">Bronnen: Milieu Centraal · Overstappen.nl · Vattenfall · eigen Python-simulatie</p>
+</div>
+
+<!-- STAT STRIP -->
+<div class="strip fu d2">
+  <div class="strip-cell"><div class="strip-val c-lime">€ 0,37</div><div class="strip-lbl">per kWh<br/>elektriciteit</div></div>
+  <div class="strip-cell"><div class="strip-val c-cyan">€ 1,45</div><div class="strip-lbl">per m³<br/>gas</div></div>
+  <div class="strip-cell"><div class="strip-val c-amber">~24%</div><div class="strip-lbl">besparing<br/>simulatie PWS</div></div>
+  <div class="strip-cell"><div class="strip-val c-violet">€ 978</div><div class="strip-lbl">besparing<br/>per jaar (PWS)</div></div>
+</div>
+
+<main>
+<!-- ─── CALCULATOR ─── -->
+<div class="sh fu d3"><span class="sh-num">01</span><span class="sh-txt">Bereken jouw besparing</span></div>
+<div class="main-grid">
+
+  <!-- LEFT FORM -->
+  <div class="panel fu d3">
+    <div class="panel-h">Jouw situatie</div>
+
+    <div class="grid2">
+      <div class="fld">
+        <label>Aantal personen</label>
+        <select id="persons" onchange="calc()">
+          <option value="1">1 persoon</option>
+          <option value="2">2 personen</option>
+          <option value="3">3 personen</option>
+          <option value="4" selected>4 personen</option>
+          <option value="5">5+ personen</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>Energielabel</label>
+        <select id="label" onchange="calc()">
+          <option value="A">A / A+ (nieuwbouw)</option>
+          <option value="B">B (goed geïsoleerd)</option>
+          <option value="C" selected>C (gemiddeld)</option>
+          <option value="D">D (matig)</option>
+          <option value="E">E–G (slecht)</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>Woningtype</label>
+        <select id="wtype" onchange="calc()">
+          <option value="app">Appartement</option>
+          <option value="tuss" selected>Tussenwoning</option>
+          <option value="hoek">Hoekwoning</option>
+          <option value="vrij">Vrijstaand huis</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>Bouwjaar</label>
+        <select id="bouwjaar" onchange="calc()">
+          <option value="oud">Vóór 1970</option>
+          <option value="mid" selected>1970–2000</option>
+          <option value="nieuw">Na 2000</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="panel-h" style="margin-top:8px">Huidig verbruik & prijzen</div>
+    <div class="grid2">
+      <div class="fld">
+        <label>Elektriciteit/jaar <span class="src">Milieu Centraal</span></label>
+        <div class="iw"><input type="number" id="kwh" value="2420" min="300" max="15000" oninput="calc()"/><span class="unt">kWh</span></div>
+      </div>
+      <div class="fld">
+        <label>Gas/jaar <span class="src">Milieu Centraal</span></label>
+        <div class="iw"><input type="number" id="gas" value="1020" min="0" max="8000" oninput="calc()"/><span class="unt">m³</span></div>
+      </div>
+      <div class="fld">
+        <label>Stroomprijs <span class="src">Milieu Centraal</span></label>
+        <div class="iw"><input type="number" id="ep" value="0.37" min="0.01" max="2" step="0.01" oninput="calc()"/><span class="unt">€/kWh</span></div>
+      </div>
+      <div class="fld">
+        <label>Gasprijs <span class="src">Milieu Centraal</span></label>
+        <div class="iw"><input type="number" id="gp" value="1.45" min="0.01" max="5" step="0.01" oninput="calc()"/><span class="unt">€/m³</span></div>
+      </div>
+    </div>
+
+    <div class="panel-h" style="margin-top:8px">Kies je smart home apparaten</div>
+    <p style="font-size:.76rem;color:var(--sub2);margin-bottom:14px;line-height:1.5">Elk apparaat heeft een eigen aanschafkosten die de terugverdientijd beïnvloeden. Hoe meer je toevoegt, hoe meer je bespaart — maar ook hoe meer je investeert.</p>
+    <div class="devices-grid" id="devGrid"></div>
+
+    <div class="panel-h" style="margin-top:24px">Gedrag & gebruik</div>
+    <div class="fld">
+      <label>Hoe consequent gebruik je het systeem?</label>
+      <input type="range" id="effort" min="1" max="3" value="2" oninput="calc();updEffort()"/>
+      <div class="range-row">
+        <span>Passief (−30%)</span>
+        <span id="efLbl" style="color:var(--lime);font-weight:600">Normaal</span>
+        <span>Actief (+25%)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT RESULTS -->
+  <div class="res-panel fu d4">
+    <div class="panel">
+      <div class="panel-h">Resultaat</div>
+      <div class="big-num-wrap">
+        <div class="big-lbl">Jaarlijkse besparing</div>
+        <div class="big-num" id="bigNum">€ —</div>
+        <div class="big-sub" id="bigSub">per jaar</div>
+        <div class="big-pct" id="bigPct">—%</div>
+      </div>
+
+      <div class="r-row"><span class="r-l">Huidige jaarrekening</span><span class="r-v c-rose" id="rCur">—</span></div>
+      <div class="r-row"><span class="r-l">Na smart home</span><span class="r-v c-cyan" id="rNew">—</span></div>
+      <div class="r-row"><span class="r-l">Besparing stroom</span><span class="r-v c-lime" id="rES">—</span></div>
+      <div class="r-row"><span class="r-l">Besparing gas</span><span class="r-v c-lime" id="rGS">—</span></div>
+      <div class="r-row"><span class="r-l">Stroom bespaard</span><span class="r-v" style="color:var(--sub2)" id="rEK">—</span></div>
+      <div class="r-row"><span class="r-l">Gas bespaard</span><span class="r-v" style="color:var(--sub2)" id="rGM">—</span></div>
+      <div class="r-row"><span class="r-l">CO₂ bespaard</span><span class="r-v c-lime" id="rCO">—</span></div>
+      <div class="r-row"><span class="r-l">Hardware totaal</span><span class="r-v c-amber" id="rHW">—</span></div>
+      <div class="r-row"><span class="r-l">Terugverdientijd</span><span class="r-v c-violet" id="rTV">—</span></div>
+
+      <div class="bar-section">
+        <div class="bar-lbl-row">Besparing per categorie</div>
+        <div class="bar-item">
+          <div class="bar-meta"><span class="bar-name">🌡️ Verwarming & gas</span><span class="bar-pct" id="pHeat">—</span></div>
+          <div class="bar-track"><div class="bar-fill" id="bHeat" style="width:0%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-meta"><span class="bar-name">💡 Verlichting</span><span class="bar-pct" id="pLight">—</span></div>
+          <div class="bar-track"><div class="bar-fill" id="bLight" style="width:0%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-meta"><span class="bar-name">🔌 Standby & stekkers</span><span class="bar-pct" id="pStand">—</span></div>
+          <div class="bar-track"><div class="bar-fill" id="bStand" style="width:0%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-meta"><span class="bar-name">☀️ Opwekking & overig</span><span class="bar-pct" id="pOther">—</span></div>
+          <div class="bar-track"><div class="bar-fill" id="bOther" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="insight-box" id="insight">Selecteer apparaten om je besparing te zien.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── HARDWARE & PAYBACK ─── -->
+<div class="sh"><span class="sh-num">02</span><span class="sh-txt">Investering & terugverdientijd</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:56px" id="hwGrid">
+  <!-- Filled by JS -->
+</div>
+
+<!-- ─── PAYBACK CARDS ─── -->
+<div class="sh"><span class="sh-num">03</span><span class="sh-txt">Financieel overzicht</span></div>
+<div class="payback-grid" style="margin-bottom:56px">
+  <div class="pb-card lime">
+    <div class="pb-head">Hardware kosten</div>
+    <div class="pb-val c-lime" id="pcHW">€ —</div>
+    <div class="pb-desc" id="pcHWd">Totaal van geselecteerde apparaten</div>
+  </div>
+  <div class="pb-card cyan">
+    <div class="pb-head">Terugverdientijd</div>
+    <div class="pb-val c-cyan" id="pcTV">— dgn</div>
+    <div class="pb-desc" id="pcTVd">op basis van dagelijkse besparing</div>
+  </div>
+  <div class="pb-card amb">
+    <div class="pb-head">Netto winst na 5 jaar</div>
+    <div class="pb-val c-amber" id="pc5yr">€ —</div>
+    <div class="pb-desc">Na aftrek van alle hardware kosten</div>
+  </div>
+</div>
+
+<!-- ─── TIMELINE ─── -->
+<div class="sh"><span class="sh-num">04</span><span class="sh-txt">Financiële tijdlijn</span></div>
+<div class="tl-wrap" style="margin-bottom:56px">
+  <div id="tlRows"></div>
+</div>
+
+<!-- ─── INFO ─── -->
+<div class="sh"><span class="sh-num">05</span><span class="sh-txt">Hoe werkt het systeem?</span></div>
+<div class="info-grid" style="margin-bottom:56px">
+  <div class="i-card">
+    <div class="i-ico">🌡️</div>
+    <h4>Slimme thermostaat</h4>
+    <p>Overdag max 19,5°C, 's nachts terug naar 15°C. In mijn simulatie daalde het gasverbruik van 4,7 naar 3,6 m³/dag — een besparing van 23%.</p>
+    <div class="i-ref">PWS §2.2 · Milieu Centraal</div>
+  </div>
+  <div class="i-card">
+    <div class="i-ico">💡</div>
+    <h4>Verlichting timer</h4>
+    <p>Alle lampen automatisch uit na 23:00. Stroom daalde van 11,8 naar 8,9 kWh/dag — een besparing van 25% op elektriciteit.</p>
+    <div class="i-ref">PWS §2.1</div>
+  </div>
+  <div class="i-card">
+    <div class="i-ico">🔌</div>
+    <h4>Standby-uitschakeling</h4>
+    <p>'s Nachts volledig stroom eraf via slimme stekkers. Vermindert sluipverbruik van tv's en opladers én elimineert brandgevaar.</p>
+    <div class="i-ref">PWS inleiding & conclusie</div>
+  </div>
+  <div class="i-card">
+    <div class="i-ico">🔒</div>
+    <h4>Veiligheid</h4>
+    <p>Oververhittingsrisico: van 6 uur/nacht naar 0%. Niet uit te drukken in geld maar een groot voordeel naast de geldbesparing.</p>
+    <div class="i-ref">PWS §2.3</div>
+  </div>
+  <div class="i-card">
+    <div class="i-ico">🧮</div>
+    <h4>Tick-systeem</h4>
+    <p>Elke "tick" = 1 uur. Kosten per tick: gas €0,17 + stroom €0,10 = €0,27 totaal per uur. Dit is de basis van mijn Python-simulatie.</p>
+    <div class="i-ref">PWS §3.13</div>
+  </div>
+  <div class="i-card">
+    <div class="i-ico">📡</div>
+    <h4>Aanwezigheidssensor</h4>
+    <p>Verbeterpunt uit de discussie: met PIR-sensoren gaat het licht pas uit als er echt niemand meer aanwezig is, niet op vaste tijden.</p>
+    <div class="i-ref">PWS Discussie §1</div>
+  </div>
+</div>
+
+<!-- ─── TABLE ─── -->
+<div class="sh"><span class="sh-num">06</span><span class="sh-txt">Nulmeting vs. met systeem (PWS-data)</span></div>
+<div class="tbl-wrap" style="margin-bottom:56px">
+  <table>
+    <thead><tr>
+      <th>Meting</th><th>Zonder systeem</th><th>Met systeem</th><th>Besparing</th><th>Bron</th>
+    </tr></thead>
+    <tbody>
+      <tr><td>Stroom per dag</td><td class="c-rose">11,8 kWh</td><td class="c-lime">8,9 kWh</td><td class="c-lime">−2,9 kWh (25%)</td><td style="color:var(--sub);font-family:var(--mono);font-size:.72rem">PWS Tabel 1</td></tr>
+      <tr><td>Gas per dag</td><td class="c-rose">4,7 m³</td><td class="c-lime">3,6 m³</td><td class="c-lime">−1,1 m³ (23%)</td><td style="color:var(--sub);font-family:var(--mono);font-size:.72rem">PWS §2.2</td></tr>
+      <tr><td>Kosten per dag</td><td class="c-rose">€ 11,19</td><td class="c-lime">€ 8,51</td><td class="c-lime">−€ 2,68 (24%)</td><td style="color:var(--sub);font-family:var(--mono);font-size:.72rem">PWS §3</td></tr>
+      <tr><td>Kosten per jaar</td><td class="c-rose">€ 4.084</td><td class="c-lime">€ 3.106</td><td class="c-lime">−€ 978/jaar</td><td style="color:var(--sub);font-family:var(--mono);font-size:.72rem">PWS §3</td></tr>
+      <tr><td>Brandrisico nacht</td><td class="c-rose">6 uur/nacht</td><td class="c-lime">0 uur</td><td class="c-lime">100% veiliger</td><td style="color:var(--sub);font-family:var(--mono);font-size:.72rem">PWS §2.3</td></tr>
+      <tr><td>Hardware</td><td style="color:var(--sub)">—</td><td class="c-amber">€ 125</td><td class="c-lime">Terug na ~47 dgn</td><td style="color:var(--sub);font-family:var(--mono);font-size:.72rem">PWS Kosten</td></tr>
+      <tr><td>Energielabel</td><td><span class="badge badge-c">Label C</span></td><td><span class="badge badge-a">Effectief B/C+</span></td><td class="c-lime">~1 stap omhoog</td><td style="color:var(--sub);font-family:var(--mono);font-size:.72rem">Schatting</td></tr>
+    </tbody>
+  </table>
+</div>
+
+</main>
+
+<footer>
+  <p>Profielwerkstuk · Justin Mengerink · H5A · Marienburg College · Leeuwarden · 2025–2026</p>
+  <p>Prijzen: Milieu Centraal · Verbruik: Overstappen.nl, Vattenfall · Resultaten: eigen Python-simulatie</p>
+</footer>
+
+<script>
+// ── DEVICE DEFINITIONS ──────────────────────────────────────────────────────
+// elecSave/gasSave = fraction saved from total usage
+// hwCost = hardware aanschafkosten in euro
+// cat = for bar chart
+const DEVICES = [
+  { key:'light',    icon:'💡', name:'Verlichting timer',      elecSave:.13, gasSave:.00, hwCost:45,   cat:'light', desc:'Slimme lampen + timer-app', save:'~13% op stroom' },
+  { key:'heat',     icon:'🌡️', name:'Slimme thermostaat',     elecSave:.02, gasSave:.18, hwCost:80,   cat:'heat',  desc:'Tado/Nest thermostaat',      save:'~18% op gas' },
+  { key:'standby',  icon:'🔌', name:'Slimme stekkers (×5)',   elecSave:.09, gasSave:.00, hwCost:75,   cat:'stand', desc:'€15 per stuk × 5 stuks',     save:'~9% op stroom' },
+  { key:'presence', icon:'📡', name:'Aanwezigheidssensor',    elecSave:.04, gasSave:.05, hwCost:35,   cat:'heat',  desc:'PIR-sensor + controller',     save:'~4% stroom / 5% gas' },
+  { key:'solar',    icon:'☀️', name:'Zonnepanelen (6 pnl)',   elecSave:.22, gasSave:.00, hwCost:3500, cat:'other', desc:'6× 400W panelen incl. omv.',  save:'~22% op stroom' },
+  { key:'heatpump', icon:'🌀', name:'Warmtepomp',             elecSave:.00, gasSave:.45, hwCost:5500, cat:'heat',  desc:'Lucht/water warmtepomp',      save:'~45% op gas' },
+  { key:'dynamic',  icon:'📈', name:'Dynamisch stroomtarief', elecSave:.06, gasSave:.00, hwCost:50,   cat:'other', desc:'Slimme meter + app',          save:'~6% op stroom' },
+  { key:'hub',      icon:'🖥️', name:'Smart home hub',         elecSave:.03, gasSave:.02, hwCost:120,  cat:'other', desc:'Bijv. Home Assistant server',  save:'~3% stroom / 2% gas' },
+  { key:'doorbell', icon:'🔔', name:'Slimme deurbel/cam',     elecSave:.01, gasSave:.00, hwCost:120,  cat:'other', desc:'Ring/Nest video deurbel',      save:'~1% (comfort)' },
+  { key:'washing',  icon:'🫧', name:'Slim wasprogramma',      elecSave:.04, gasSave:.00, hwCost:0,    cat:'stand', desc:'App-sturing bestaand apparaat', save:'~4% op stroom' },
+];
+
+const EFFORT_MULT = [0,.65,1.0,1.25];
+const EFFORT_LBLS = ['','Passief','Normaal','Actief'];
+
+let active = new Set(['light','heat','standby']);
+
+// ── BUILD DEVICE GRID ───────────────────────────────────────────────────────
+function buildDevGrid() {
+  const g = document.getElementById('devGrid');
+  g.innerHTML = '';
+  DEVICES.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'dev-card' + (active.has(d.key) ? ' on' : '');
+    el.dataset.key = d.key;
+    el.innerHTML = `
+      <div class="dev-top">
+        <span class="dev-ico">${d.icon}</span>
+        <span class="dev-check">${active.has(d.key) ? '✓' : ''}</span>
+      </div>
+      <div class="dev-name">${d.name}</div>
+      <div class="dev-save c-lime">${d.save}</div>
+      <div class="dev-cost">Hardware: ${d.hwCost > 0 ? '€ '+d.hwCost.toLocaleString('nl') : 'geen kosten'}</div>`;
+    el.addEventListener('click', () => {
+      active.has(d.key) ? active.delete(d.key) : active.add(d.key);
+      buildDevGrid();
+      calc();
+    });
+    g.appendChild(el);
+  });
+}
+
+function updEffort() {
+  const v = +document.getElementById('effort').value;
+  document.getElementById('efLbl').textContent = EFFORT_LBLS[v];
+}
+
+function euro(n) {
+  return '€\u202f' + Math.round(n).toLocaleString('nl-NL');
+}
+
+// ── CALCULATE ───────────────────────────────────────────────────────────────
+function calc() {
+  const kwh    = +document.getElementById('kwh').value  || 2420;
+  const gas    = +document.getElementById('gas').value  || 1020;
+  const ep     = +document.getElementById('ep').value   || 0.37;
+  const gp     = +document.getElementById('gp').value   || 1.45;
+  const effort = +document.getElementById('effort').value;
+  const efm    = EFFORT_MULT[effort];
+
+  // Sum savings + hardware costs from active devices
+  let elecP=0, gasP=0, hwTotal=0;
+  let cHeat=0, cLight=0, cStand=0, cOther=0;
+
+  DEVICES.forEach(d => {
+    if (!active.has(d.key)) return;
+    elecP  += d.elecSave;
+    gasP   += d.gasSave;
+    hwTotal+= d.hwCost;
+    if (d.cat==='heat')  cHeat  += d.gasSave*0.7 + d.elecSave*0.3;
+    if (d.cat==='light') cLight += d.elecSave;
+    if (d.cat==='stand') cStand += d.elecSave;
+    if (d.cat==='other') cOther += d.elecSave + d.gasSave*0.3;
+  });
+
+  // Apply effort + cap
+  elecP = Math.min(elecP * efm, 0.80);
+  gasP  = Math.min(gasP  * efm, 0.80);
+
+  const elecSavedKwh = kwh * elecP;
+  const gasSavedM3   = gas * gasP;
+  const elecSavedEur = elecSavedKwh * ep;
+  const gasSavedEur  = gasSavedM3   * gp;
+  const totalSaved   = elecSavedEur + gasSavedEur;
+  const currentTotal = kwh * ep + gas * gp;
+  const newTotal     = currentTotal - totalSaved;
+  const pct          = currentTotal > 0 ? (totalSaved / currentTotal * 100) : 0;
+  const co2          = elecSavedKwh * 0.27 + gasSavedM3 * 1.89;
+  const dailySave    = totalSaved / 365;
+
+  // Terugverdientijd: hwTotal / daily saving
+  const paybackDays  = dailySave > 0 ? Math.round(hwTotal / dailySave) : 0;
+  const net5yr       = totalSaved * 5 - hwTotal;
+
+  // ── DOM Updates ──
+  document.getElementById('bigNum').textContent  = euro(totalSaved);
+  document.getElementById('bigPct').textContent  = Math.round(pct) + '%';
+  document.getElementById('bigSub').textContent  = `${euro(totalSaved/12)} per maand · € ${dailySave.toFixed(2).replace('.',',')} per dag`;
+
+  document.getElementById('rCur').textContent = euro(currentTotal);
+  document.getElementById('rNew').textContent = euro(newTotal);
+  document.getElementById('rES').textContent  = euro(elecSavedEur);
+  document.getElementById('rGS').textContent  = euro(gasSavedEur);
+  document.getElementById('rEK').textContent  = Math.round(elecSavedKwh).toLocaleString('nl') + ' kWh';
+  document.getElementById('rGM').textContent  = Math.round(gasSavedM3).toLocaleString('nl')   + ' m³';
+  document.getElementById('rCO').textContent  = Math.round(co2).toLocaleString('nl')           + ' kg';
+  document.getElementById('rHW').textContent  = euro(hwTotal);
+  document.getElementById('rTV').textContent  = fmtDays(paybackDays);
+
+  // Bars
+  const mx = Math.max(cHeat,cLight,cStand,cOther,.001);
+  const toW = v => Math.round(Math.min(v/mx,1)*100);
+  document.getElementById('bHeat').style.width  = toW(cHeat)+'%';
+  document.getElementById('bLight').style.width = toW(cLight)+'%';
+  document.getElementById('bStand').style.width = toW(cStand)+'%';
+  document.getElementById('bOther').style.width = toW(cOther)+'%';
+  document.getElementById('pHeat').textContent  = Math.round(cHeat*efm*100)+'%';
+  document.getElementById('pLight').textContent = Math.round(cLight*efm*100)+'%';
+  document.getElementById('pStand').textContent = Math.round(cStand*efm*100)+'%';
+  document.getElementById('pOther').textContent = Math.round(cOther*efm*100)+'%';
+
+  // Payback cards
+  document.getElementById('pcHW').textContent  = euro(hwTotal);
+  document.getElementById('pcHWd').textContent = `${active.size} apparaten geselecteerd`;
+  document.getElementById('pcTV').textContent  = fmtDays(paybackDays);
+  document.getElementById('pcTVd').textContent = `bij € ${dailySave.toFixed(2).replace('.',',')} per dag`;
+  document.getElementById('pc5yr').textContent = euro(net5yr);
+
+  // Hardware breakdown panel
+  buildHwPanel(hwTotal, dailySave, paybackDays);
+
+  // Timeline
+  buildTimeline(totalSaved, hwTotal);
+
+  // Insight
+  const p = Math.round(pct);
+  let msg = '';
+  if (active.size === 0) {
+    msg = 'Selecteer minstens één apparaat om je besparing te zien.';
+  } else if (hwTotal === 0) {
+    msg = `Gratis ingrepen (app-instellingen) leveren <strong>${p}%</strong> besparing op — ${euro(totalSaved)}/jaar. Geen hardware nodig!`;
+  } else if (p < 10) {
+    msg = `<strong>${p}% besparing</strong> — ${euro(totalSaved)}/jaar. Hardware kost ${euro(hwTotal)}, terugverdient in ${fmtDays(paybackDays)}. Voeg de slimme thermostaat toe voor veel meer gaswinst.`;
+  } else if (p <= 30) {
+    msg = `<strong>${p}% besparing</strong> — ${euro(totalSaved)}/jaar. Dit sluit aan bij mijn PWS-simulatie (~24%). Hardware: ${euro(hwTotal)}, terugverdient in ${fmtDays(paybackDays)}. CO₂: ${Math.round(co2).toLocaleString('nl')} kg minder.`;
+  } else if (p <= 55) {
+    msg = `<strong>${p}%</strong> — ${euro(totalSaved)}/jaar. Dit gaat verder dan mijn PWS-basis door grotere investeringen. Hardware: ${euro(hwTotal)}, terugverdient in ${fmtDays(paybackDays)}.`;
+  } else {
+    msg = `<strong>${p}% besparing!</strong> Dit is een maximale setup met zonnepanelen en warmtepomp. Investering: ${euro(hwTotal)}, terugverdient in ${fmtDays(paybackDays)}. Na 10 jaar: ${euro(totalSaved*10-hwTotal)} netto winst.`;
+  }
+  document.getElementById('insight').innerHTML = msg;
+}
+
+function fmtDays(d) {
+  if (!d || d <= 0) return '—';
+  if (d < 30)   return d + ' dagen';
+  if (d < 365)  return Math.round(d/30) + ' maanden';
+  const yr = (d/365).toFixed(1).replace('.',',');
+  return yr + ' jaar';
+}
+
+function buildHwPanel(hwTotal, dailySave, paybackDays) {
+  const g = document.getElementById('hwGrid');
+  const activeDevs = DEVICES.filter(d => active.has(d.key));
+
+  let listHTML = activeDevs.length === 0
+    ? '<p style="color:var(--sub);font-size:.82rem;padding:20px 0">Geen apparaten geselecteerd.</p>'
+    : activeDevs.map(d => `
+      <div class="hw-item">
+        <span class="hw-name">${d.icon} ${d.name}</span>
+        <span class="hw-price">${d.hwCost > 0 ? euro(d.hwCost) : 'gratis'}</span>
+      </div>`).join('') + `
+      <div class="hw-item">
+        <span class="hw-total-label">Totaal investering</span>
+        <span class="hw-total-val">${euro(hwTotal)}</span>
+      </div>`;
+
+  const payHTML = `
+    <div style="margin-top:20px">
+      <div style="font-family:var(--mono);font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;color:var(--sub);margin-bottom:14px">Terugverdienberekening</div>
+      <div class="hw-item"><span class="hw-name">Jaarlijkse besparing</span><span style="font-family:var(--mono);color:var(--lime)">${euro(dailySave*365)}</span></div>
+      <div class="hw-item"><span class="hw-name">Dagelijkse besparing</span><span style="font-family:var(--mono);color:var(--lime)">€ ${dailySave.toFixed(2).replace('.',',')}</span></div>
+      <div class="hw-item"><span class="hw-name">Hardware investering</span><span style="font-family:var(--mono);color:var(--amber)">${euro(hwTotal)}</span></div>
+      <div class="hw-item" style="border:none;padding-top:14px">
+        <span style="color:var(--txt);font-weight:700">Terugverdientijd</span>
+        <span style="font-family:var(--mono);font-weight:700;color:var(--violet)">${fmtDays(paybackDays)}</span>
+      </div>
+      <div style="margin-top:12px;font-size:.74rem;color:var(--sub);line-height:1.5">
+        Formule: <span style="font-family:var(--mono);color:var(--sub2)">${euro(hwTotal)} ÷ €\u202f${dailySave.toFixed(2).replace('.',',')} per dag = ${paybackDays || '—'} dagen</span>
+      </div>
+    </div>`;
+
+  g.innerHTML = `
+    <div class="panel">
+      <div class="panel-h">Geselecteerde hardware</div>
+      <div class="hw-list">${listHTML}</div>
+    </div>
+    <div class="panel">
+      <div class="panel-h">Berekening terugverdientijd</div>
+      ${payHTML}
+    </div>`;
+}
+
+function buildTimeline(yearSave, hw) {
+  const el = document.getElementById('tlRows');
+  el.innerHTML = '';
+  const pts = [[0,'Nu'],[0.5,'6 maanden'],[1,'1 jaar'],[2,'2 jaar'],[3,'3 jaar'],[5,'5 jaar'],[10,'10 jaar'],[20,'20 jaar']];
+  const maxAbs = Math.max(yearSave*20, hw, 1);
+
+  pts.forEach(([y,lbl]) => {
+    const net = yearSave*y - hw;
+    const isPos = net >= 0;
+    const w = Math.max(Math.min(Math.abs(net)/maxAbs*100, 100), 4);
+    const sign = isPos ? '+' : '−';
+    const valStr = Math.abs(Math.round(net)).toLocaleString('nl-NL');
+
+    const row = document.createElement('div');
+    row.className = 'tl-row';
+    row.innerHTML = `
+      <div class="tl-yr">${lbl}</div>
+      <div>
+        <div class="tl-bar-bg">
+          <div class="tl-bar-in ${isPos?'pos':'neg'}" style="width:${w}%">${sign}\u202f€\u202f${valStr}</div>
+        </div>
+        <div class="tl-note">${isPos ? '✓ Netto winst behaald' : `⏳ Hardware nog niet terugverdiend — nog €\u202f${Math.round(hw - yearSave*y).toLocaleString('nl-NL')} te gaan`}</div>
+      </div>`;
+    el.appendChild(row);
+  });
+}
+
+// ── INIT ────────────────────────────────────────────────────────────────────
+buildDevGrid();
+updEffort();
+calc();
+</script>
+</body>
+</html>
